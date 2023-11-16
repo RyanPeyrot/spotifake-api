@@ -3,12 +3,10 @@ const User = require("../models/user.model");
 /* CREATE */
 exports.createUser = async (req, res) => {
     try {
-        const {password, email, isAdmin } = req.body;
-
         const newUser = new User({
-            email,
-            password, // TODO : Hachage de mot de passe à prévoir
-            isAdmin,
+             email : req.body.email,
+            password: req.body.password, // TODO : Hachage de mot de passe à prévoir
+            isAdmin: req.body.isAdmin,
         });
 
         const savedUser = await newUser.save();
