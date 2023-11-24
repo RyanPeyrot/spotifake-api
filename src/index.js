@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const app = express();
 const apiRouter = require('./routes/index');
 const cors = require('cors');
+const aws = require("aws-sdk")
 require('dotenv').config();
 
 mongoose.set('strictQuery',false);
@@ -19,3 +20,9 @@ app.use('/spotifake-ral/v1',apiRouter)
 app.listen(process.env.PORT,function (){
     console.log("server launch");
 });
+
+aws.config.update({
+    accessKeyId:process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey:process.env.AWS_SECRET_ACCESS_KEY,
+    region:process.env.AWS_REGION
+})
