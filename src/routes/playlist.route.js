@@ -3,9 +3,11 @@ const router = express.Router();
 const controller = require("../controllers/playlist.controller")
 const path = require("path");
 const fs = require("fs");
+const multer = require("multer");
+
 
 const uploadDestination = path.join(__dirname, '../uploads/thumbnail');
-try {
+/*try {
     await fs.access(chemin, fs.constants.F_OK);
 } catch (err) {
     if (err.code === 'ENOENT') {
@@ -16,7 +18,7 @@ try {
         // Une autre erreur s'est produite
         console.error(`Erreur lors de la vérification du chemin : ${err.message}`);
     }
-}
+}*/
 
 const storage = multer.diskStorage({
     destination: uploadDestination,
@@ -32,6 +34,8 @@ router.get("/",controller.getAll);
 router.delete("/:id",controller.deletePlaylist);
 router.put("/:id",controller.updatePlaylist);
 router.put("/:id",controller.addOneSong);
+/*
 router.put("/:id",upload.single('file'),controller.editThumbnail)
+*/
 
 module.exports = router;

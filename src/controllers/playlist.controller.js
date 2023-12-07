@@ -8,7 +8,7 @@ const path = require('path')
 exports.createPlaylist = async (req, res) => {
     try {
         const newPlaylist = new Playlist({
-            nom : req.body.nom,
+            name : req.body.name,
             createdAt: req.body.createdAt,
             creator: req.body.creator,
             media:[],
@@ -106,14 +106,13 @@ exports.addOneSong = async (req, res) => {
 
 exports.editThumbnail = async (req, res) => {
     try{
-        //TODO : Penser à rename le fichier en front au bon format.
         const s3 = new AWS.S3()
 
 
         const uploadParams = {
             Bucket: 'spotifake-ral',
             Key: req.file.originalname,
-            Body: fs.createReadStream('../uploads/playlist/',req.file.filename),
+            Body: fs.createReadStream('../uploads/playlist/thumbnail_',req.file.filename),
         };
 
         s3.upload(uploadParams, (err,data) => {

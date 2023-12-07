@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const {Schema} = require("mongoose");
 
 const playlistSchema = mongoose.Schema({
-    nom : {
+    name : {
         type: String,
         required:true,
     },
