@@ -6,6 +6,7 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path")
 const { promisify } = require('util');
+const User = require('../models/user.model');
 
 
 const writeFileAsync = promisify(fs.writeFile);
@@ -143,6 +144,20 @@ exports.createOne = async(req,res) => {
 /* GET */
 exports.getAll = async(req,res) => {
     try {
+        const users = await Media.find();
+        res.status(200).json(users);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({message: 'Erreur lors de la récupération des média'});
+    }
+}
+
+
+
+
+/*    FONCTION POUR AJOUTER TOUTES LES CHANSON DE ZACK */
+function addZackSongs() {
+    try {
         const s3 = new AWS.S3()
         const uploadS3 = async (params) => {
             return s3.upload(params).promise()
@@ -199,13 +214,13 @@ exports.getAll = async(req,res) => {
                     if(metadata.common.albumartist === undefined)metadata.common.albumartist = metadata.common.artist
                     //création/ajout à l'album
                     await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist})
-                        .then((result) => {
-                            album = result;
-                        })
-                        .catch((error) => {
-                            // Gérez les erreurs ici
-                            console.error('Erreur lors de la recherche d\'album :', error);
-                        });
+                      .then((result) => {
+                          album = result;
+                      })
+                      .catch((error) => {
+                          // Gérez les erreurs ici
+                          console.error('Erreur lors de la recherche d\'album :', error);
+                      });
                     if(album === null){
                         const uploadThumbParams = {
                             Bucket: 'spotifake-ral',
@@ -237,13 +252,13 @@ exports.getAll = async(req,res) => {
                     for (const artist of metadata.common.artists) {
                         let mediaArtist;
                         await Artist.findOne({ name: artist })
-                            .then((result) => {
-                                mediaArtist = result;
-                            })
-                            .catch((error) => {
-                                // Gérez les erreurs ici
-                                console.error('Erreur lors de la recherche d\'artiste :', error);
-                            });
+                          .then((result) => {
+                              mediaArtist = result;
+                          })
+                          .catch((error) => {
+                              // Gérez les erreurs ici
+                              console.error('Erreur lors de la recherche d\'artiste :', error);
+                          });
                         if (mediaArtist === null){
                             mediaArtist = new Artist({
                                 name : artist === undefined ? "undefined" : artist,
@@ -293,7 +308,7 @@ exports.getAll = async(req,res) => {
                 return res.status(500).send('Erreur lors de la lecture des métadonnées.');
             }
 
-                // Appel récursif pour passer à la prochaine itération
+            // Appel récursif pour passer à la prochaine itération
             await traiterFichiers(index + 1);
         }
 
@@ -302,4 +317,5 @@ exports.getAll = async(req,res) => {
         console.error('Erreur lors du traitement de la requête :', error);
         return res.status(500).send('Erreur lors du traitement de la requête.');
     }
+
 }
