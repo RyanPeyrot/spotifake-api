@@ -21,5 +21,9 @@ const upload = multer({ storage: storage });
 //router.get(<path>,<controller>.<method>)
 router.post("/",upload.single('file'),controller.createOne);
 router.get("/",controller.getAll);
+router.get("/title/",controller.getOneByName);
+router.get("/:id",controller.getOneById);
+router.put("/:id",controller.updateMedia);
+router.delete("/:id",controller.deleteMedia);
 
 module.exports = router;

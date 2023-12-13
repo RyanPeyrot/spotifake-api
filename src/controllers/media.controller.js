@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path")
 const { promisify } = require('util');
-const User = require('../models/user.model');
+const {createPlaylist} = require('./playlist.controller');
 
 
 const writeFileAsync = promisify(fs.writeFile);
@@ -29,19 +29,17 @@ exports.createOne = async(req,res) => {
                     if(metadata.common.albumartist === undefined)metadata.common.albumartist = metadata.common.artist
                     let album;
                     //création/ajout à l'album
-                    await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist})
-                        .then((result) => {
-                            if (result) {
-                                console.log('Album trouvé :', result);
-                            } else {
-                                console.log('Aucun album trouvé.');
-                            }
-                            album = result;
-                        })
-                        .catch((error) => {
-                            // Gérez les erreurs ici
-                            console.error('Erreur lors de la recherche d\'album :', error);
-                        });
+                    await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist},(err,playlist) => {
+                        if(err){
+                            console.error("Erreur lors de la récupération de l'album")
+                        }
+                        if(playlist){
+                            console.log('Album trouvé :', playlist);
+                        } else {
+                            console.error('Aucun album existant trouvé.');
+                        }
+                        album = playlist;
+                    })
                     if(album === null){
                         const uploadThumbParams = {
                             Bucket: 'spotifake-ral',
@@ -144,14 +142,86 @@ exports.createOne = async(req,res) => {
 /* GET */
 exports.getAll = async(req,res) => {
     try {
-        const users = await Media.find();
-        res.status(200).json(users);
+        const medias = await Media.find().populate('artist')
+          .populate('album');
+        return res.status(200).json(medias);
     } catch (error) {
         console.error(error);
-        res.status(500).json({message: 'Erreur lors de la récupération des média'});
+        return res.status(500).json({message: 'Erreur lors de la récupération des média'});
     }
 }
 
+exports.getOneById = async (req,res) => {
+    try{
+        Media.findById(req.params.id).populate('artist')
+          .populate('album').then((doc) => {
+            if (doc) {
+                return res.status(200).json(doc)
+            } else {
+                return res.status(404).json({message: 'Aucun média trouvé'})
+            }
+        })
+    }catch (error){
+        console.error(error);
+        return res.status(500).json({message: 'Erreur lors de la récupération des média'});
+    }
+}
+
+exports.getOneByName = async (req,res) => {
+    try {
+        Media.findOne({title: req.headers.title}).populate('artist')
+          .populate('album').then((doc) => {
+            if (doc) {
+                return res.status(200).json(doc)
+            } else {
+                return res.status(404).json({message: 'Aucun média trouvé'})
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({message: 'Erreur lors de la récupération des média'});
+    }
+}
+
+/* UPDATE */
+exports.updateMedia = async (req,res) => {
+    try {
+        Media.findByIdAndUpdate(req.params.id, req.body, {new: true},(err,media) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({message: 'Erreur lors de l\'update du média'});
+            }
+            if (media) {
+                return res.status(200).json(media)
+            } else {
+                return res.status(404).json({message: 'Aucun média trouvé'})
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({message: 'Erreur lors de l\'update du média'});
+    }
+}
+
+/*  DELETE  */
+exports.deleteMedia = async (req,res) => {
+    try {
+        Media.findByIdAndDelete(req.params.id,(err,media) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({message: 'Erreur lors de la suppression du média'});
+            }
+            if (media) {
+                return res.status(200).json(media)
+            } else {
+                return res.status(404).json({message: 'Aucun média trouvé'})
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({message: 'Erreur lors de la suppression du média'});
+    }
+}
 
 
 

@@ -29,8 +29,9 @@ const storage = multer.diskStorage({
 
 //router.get(<path>,<controller>.<method>)
 router.post("/",controller.createPlaylist);
-router.get("/:id",controller.getPlaylistById);
 router.get("/",controller.getAll);
+router.get("/name/",controller.getByName);
+router.get("/:id",controller.getPlaylistById);
 router.delete("/:id",controller.deletePlaylist);
 router.put("/:id",controller.updatePlaylist);
 router.put("/:id",controller.addOneSong);
