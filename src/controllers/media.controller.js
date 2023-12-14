@@ -6,7 +6,6 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path")
 const { promisify } = require('util');
-const {createPlaylist} = require('./playlist.controller');
 
 
 const writeFileAsync = promisify(fs.writeFile);
