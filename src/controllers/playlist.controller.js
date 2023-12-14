@@ -20,7 +20,7 @@ exports.createPlaylist = async (req, res) => {
 
 exports.getAll = async (req, res) => {
     try {
-        const Playlists = await Playlist.find().populate('medias');
+        const Playlists = await Playlist.find().populate({ path: 'medias', populate: { path: 'artists' } });
         return res.status(200).json(Playlists);
     } catch (error) {
         console.error(error);
@@ -31,7 +31,7 @@ exports.getAll = async (req, res) => {
 exports.getPlaylistById = async (req, res) => {
     try {
         const PlaylistId = req.params.id;
-        await Playlist.findById(PlaylistId).populate('medias').then((doc) => {
+        await Playlist.findById(PlaylistId).populate({ path: 'medias', populate: { path: 'artists' } }).then((doc) => {
             if (doc) {
                 return res.status(200).json(doc)
             } else {
@@ -46,7 +46,7 @@ exports.getPlaylistById = async (req, res) => {
 
 exports.getByName = async (req,res) => {
     try{
-        await Playlist.findOne({name:req.headers.name}).populate('medias').then((doc) => {
+        await Playlist.findOne({name:req.headers.name}).populate({ path: 'medias', populate: { path: 'artists' } }).then((doc) => {
             if (doc) {
                 return res.status(200).json(doc)
             } else {
