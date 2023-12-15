@@ -27,4 +27,5 @@ jobs:
             cd spotifake-api
             pm2 stop npm
             git pull origin main
+            npm run build
             pm2 start npm -- start

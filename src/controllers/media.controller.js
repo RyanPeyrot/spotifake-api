@@ -6,6 +6,8 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const fs = require("fs");
 const path = require("path")
+const fluentffmpeg = require('fluent-ffmpeg');
+const slugify = require('slugify');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 
 const uploadS3 = (params) => {
@@ -99,10 +101,27 @@ exports.createOne = async(req,res) => {
                     }
                 }
 
+                const fileName = slugify(path.parse(req.file.originalname).name, { lower: true });
+                await new Promise((resolve, reject) => {
+                    fluentffmpeg()
+                      .input(fs.createReadStream(req.file.path))
+                      .audioCodec('aac')  // Utiliser le codec AAC pour le format m4a
+                      .toFormat('m4a')    // Spécifier le format de sortie
+                      .on('end', () => {
+                        console.log('Conversion terminée avec succès');
+                        resolve();
+                    })
+                      .on('error', (err) => {
+                          console.error('Erreur lors de la conversion :', err);
+                          reject(err);
+                      })
+                      .pipe(fs.createWriteStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.m4a`));
+                });
+
                 const uploadMediaParams = {
                     Bucket: 'spotifake-ral',
                     Key: `media/media_${req.file.originalname}`,
-                    Body: fs.createReadStream(req.file.path),
+                    Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.m4a`),
                 };
 
                 const uploadThumbnailParams = {
