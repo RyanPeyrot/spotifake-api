@@ -96,7 +96,7 @@ exports.updateThumbnail = async (req, res) => {
         if (req.file) {
             const uploadMediaParams = {
                 Bucket: 'spotifake-ral',
-                Key: `playylist/thumbnail_${req.file.originalname}`,
+                Key: `playlist/thumbnail_${req.file.originalname}`,
                 Body: fs.createReadStream(req.file.path),
             };
 
