@@ -23,6 +23,7 @@ router.post("/",upload.single('file'),controller.createOne);
 router.get("/",controller.getAll);
 router.get("/name/",controller.getOneByName);
 router.get("/:id",controller.getOneById);
+router.put("/thumbnail/:id",upload.single('file'),controller.updateThumbnail);
 router.put("/:id",controller.updateOne);
 router.delete("/:id",controller.deleteOne);
 
