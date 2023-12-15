@@ -13,7 +13,10 @@ const artistSchema = mongoose.Schema({
     titles :[{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Media'
-    }]
+    }],
+    thumbnail : {
+        type:String
+    }
 })
 
 module.exports = mongoose.model('Artist', artistSchema);
