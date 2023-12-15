@@ -29,7 +29,11 @@ const mediaSchema = mongoose.Schema({
     storage : {
         type : String,
         required : true
-    }
+    },
+    thumbnail : {
+        type : String,
+        default : 'https://d2be9zb8yn0dxh.cloudfront.net/'
+    },
 })
 
 module.exports = mongoose.model('Media', mediaSchema);
