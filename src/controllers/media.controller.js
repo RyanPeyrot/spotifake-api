@@ -6,7 +6,6 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const fs = require("fs");
 const path = require("path")
-const { promisify } = require('util');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 
 const uploadS3 = (params) => {
@@ -309,9 +308,13 @@ exports.updateThumbnail = async (req, res) => {
 /*  DELETE  */
 exports.deleteMedia = async (req,res) => {
     try {
-        Media.findByIdAndDelete(req.params.id).then((doc) => {
+        await Media.findByIdAndDelete(req.params.id).then(async (doc) => {
             if (doc) {
-                return res.status(200).json({message : "Fichier bien supprimer",doc})
+                for (const artistId of doc.artist) {
+                    await Artist.findByIdAndUpdate(artistId, {$pull: {titles: doc._id}})
+                }
+                await Playlist.findByIdAndUpdate(doc.album,{$pull:{medias:doc._id}})
+                return res.status(200).json({message: "Fichier bien supprimer", doc})
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }

@@ -1,6 +1,7 @@
 const Artist = require("../models/artist.model")
 const AWS = require('aws-sdk');
 const fs = require('fs');
+const Media = require('../models/media.model');
 const s3 = new AWS.S3();
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 
@@ -159,13 +160,16 @@ exports.updateThumbnail = async (req, res) => {
 
 exports.deleteOne = async (req,res) => {
   try {
-    const deletedArtist = await Artist.findOneAndDelete({ _id: req.params.id });
-
-    if (deletedArtist) {
-      return res.status(200).json(deletedArtist);
-    } else {
-      return res.status(404).json({ message: "Aucun artist trouvé" });
-    }
+    await Artist.findOneAndDelete({ _id: req.params.id }).then(async (doc) => {
+      if (doc) {
+        for (const mediaId of doc.titles) {
+          await Media.findByIdAndUpdate(mediaId, {$pull: {artist: doc._id}})
+        }
+        return res.status(200).json(doc);
+      } else {
+        return res.status(404).json({message: "Aucun artist trouvé"});
+      }
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
