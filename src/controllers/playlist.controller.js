@@ -48,6 +48,7 @@ exports.getPlaylistById = async (req, res) => {
 
 exports.getByName = async (req,res) => {
     try{
+
         await Playlist.findOne({name:req.headers.name}).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } }).then((doc) => {
             if (doc) {
                 return res.status(200).json(doc)
