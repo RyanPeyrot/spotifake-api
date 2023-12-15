@@ -1,5 +1,8 @@
 name: EC2 Deployment
 
+env:
+  SERVER: production
+
 on:
   push:
     branches:
