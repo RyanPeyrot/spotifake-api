@@ -19,10 +19,12 @@ const playlistSchema = mongoose.Schema({
         ref: 'Media'
     }],
     thumbnail: {
-        type: String
+        type: String,
+        default : 'https://d2be9zb8yn0dxh.cloudfront.net/'
     },
     isAlbum : {
-        type: Boolean
+        type: Boolean,
+        default : false
     }
 })
 

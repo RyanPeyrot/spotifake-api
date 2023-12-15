@@ -123,25 +123,31 @@ exports.updateThumbnail = async (req, res) => {
         Body: fs.createReadStream(req.file.path),
       };
 
-      await uploadS3(uploadMediaParams)
-        .then(async (data) => {
+      const exist = await Artist.findById(req.params.id)
 
-          const updatedArtist = await Artist.findOneAndUpdate(
-            {_id: req.params.id},
-            {thumbnail: cloudfront + data.Key},
-            {new: true} // Pour renvoyer le document mis à jour
-          );
+      if(exist){
+        await uploadS3(uploadMediaParams)
+          .then(async (data) => {
 
-          if (updatedArtist) {
-            return res.status(200).json(updatedArtist);
-          } else {
-            return res.status(404).json({message: "Aucun artist trouvé"});
-          }
-        })
-        .catch((err) => {
-          console.error('Erreur lors du téléchargement:', err);
-          res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
-        });
+            const updatedArtist = await Artist.findOneAndUpdate(
+              {_id: req.params.id},
+              {thumbnail: cloudfront + data.Key},
+              {new: true} // Pour renvoyer le document mis à jour
+            );
+
+            if (updatedArtist) {
+              return res.status(200).json(updatedArtist);
+            } else {
+              console.error("une erreur est survenue durant l'update de l'artist")
+            }
+          })
+          .catch((err) => {
+            console.error('Erreur lors du téléchargement:', err);
+            res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
+          });
+      } else {
+        return res.status(404).json({message: "Aucun artist trouvé"});
+      }
     } else {
       return res.status(500).json({message:"Aucun fichier transmis"})
     }
