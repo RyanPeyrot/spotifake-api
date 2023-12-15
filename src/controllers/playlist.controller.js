@@ -166,13 +166,16 @@ exports.deletePlaylist = async (req, res) => {
     try {
         const PlaylistId = req.params.id;
 
-        const deletedPlaylist = await Playlist.findOneAndDelete(PlaylistId);
-
-        if (!deletedPlaylist) {
-            return res.status(404).json({ message: 'Playlist non trouvé' });
-        }
-
-        return res.status(200).json({ message: 'Playlist supprimé avec succès' });
+        await Playlist.findOneAndDelete(PlaylistId).then(async (doc) => {
+            if (doc) {
+                for (const mediaId of doc.medias) {
+                    await Media.findByIdAndUpdate(mediaId, {album: ''})
+                }
+                return res.status(200).json({message: 'Playlist supprimé avec succès'});
+            } else {
+                return res.status(404).json({message: 'Playlist non trouvé'});
+            }
+        })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la suppression de la playlist' });
