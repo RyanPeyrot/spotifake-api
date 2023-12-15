@@ -2,6 +2,7 @@ const Playlist = require("../models/playlist.model");
 const Media = require("../models/media.model")
 const AWS = require('aws-sdk');
 const fs = require('fs');
+const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 
 /* CREATE */
 exports.createPlaylist = async (req, res) => {
@@ -20,7 +21,7 @@ exports.createPlaylist = async (req, res) => {
 
 exports.getAll = async (req, res) => {
     try {
-        const Playlists = await Playlist.find().populate('medias');
+        const Playlists = await Playlist.find().populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
         return res.status(200).json(Playlists);
     } catch (error) {
         console.error(error);
@@ -30,23 +31,24 @@ exports.getAll = async (req, res) => {
 
 exports.getPlaylistById = async (req, res) => {
     try {
-        const PlaylistId = req.params.id;
-        await Playlist.findById(PlaylistId).populate('medias').then((doc) => {
-            if (doc) {
-                return res.status(200).json(doc)
-            } else {
-                return res.status(404).json({message: 'Aucun média trouvé'})
-            }
-        });
+        const playlistId = req.params.id;
+        const playlist = await Playlist.findById(playlistId).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
+
+        if (playlist) {
+            return res.status(200).json(playlist);
+        } else {
+            return res.status(404).json({ message: 'Aucune playlist trouvée' });
+        }
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la récupération de la playlist' });
     }
 };
 
+
 exports.getByName = async (req,res) => {
     try{
-        await Playlist.findOne({name:req.headers.name}).populate('medias').then((doc) => {
+        await Playlist.findOne({name:req.headers.name}).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } }).then((doc) => {
             if (doc) {
                 return res.status(200).json(doc)
             } else {
