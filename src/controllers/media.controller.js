@@ -9,7 +9,7 @@ const path = require("path")
 const fluentffmpeg = require('fluent-ffmpeg');
 const slugify = require('slugify');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
-const logger = require('../logger')
+const logger = require('../utils/logger')
 
 const uploadS3 = (params) => {
     return s3.upload(params).promise();

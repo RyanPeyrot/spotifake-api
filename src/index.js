@@ -4,9 +4,9 @@ const mongoose = require('mongoose');
 const app = express();
 const apiRouter = require('./routes/index');
 const cors = require('cors');
-const aws = require("aws-sdk")
+const aws = require("aws-sdk");
+const logger = require('./utils/logger')
 require('dotenv').config();
-const logger = require('logger')
 
 app.use(require('morgan')('combined', { stream: logger.stream }));
 

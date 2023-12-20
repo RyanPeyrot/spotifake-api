@@ -4,7 +4,7 @@ const fs = require('fs');
 const Media = require('../models/media.model');
 const s3 = new AWS.S3();
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
-const logger = require('../logger')
+const logger = require('../utils/logger')
 const uploadS3 = (params) => {
   return s3.upload(params).promise();
 };
