@@ -54,7 +54,7 @@ exports.getAll = async (req,res) => {
     Artist.find().populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info("requête artist/getALL réussi")
+        logger.info("artist get all reussi")
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message: "Aucun artists"})
