@@ -27,6 +27,7 @@ jobs:
             cd spotifake-api
             rm package-lock.json
             pm2 stop npm
-            git pull
+            git fetch --all
+            git reset --hard origin/<main>
             npm run build
             pm2 start npm -- start
