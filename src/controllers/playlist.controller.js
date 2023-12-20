@@ -15,11 +15,10 @@ exports.createPlaylist = async (req, res) => {
     try {
         const playlist = new Playlist(req.body);
         const savedPlaylist = await playlist.save();
-        logger.info("Playlist crée")
+        console.log("Playlist crée")
         res.json(savedPlaylist);
     } catch (error) {
-        logger.debug("body : "+req.body)
-        logger.error(error);
+        console.error(error);
         res.status(500).json({ message: 'Erreur lors de la création de la playlist' });
     }
 };
@@ -30,10 +29,10 @@ exports.createPlaylist = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const Playlists = await Playlist.find().populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
-        logger.info("Requete playlist getAll reussi")
+        console.log("Requete playlist getAll reussi")
         return res.status(200).json(Playlists);
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({message: 'Erreur lors de la récupération des playlists'});
     }
 }
@@ -44,13 +43,13 @@ exports.getPlaylistById = async (req, res) => {
         const playlist = await Playlist.findById(playlistId).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
 
         if (playlist) {
-            logger.info("Requete playlist getById reussi")
+            console.log("Requete playlist getById reussi")
             return res.status(200).json(playlist);
         } else {
             return res.status(404).json({ message: 'Aucune playlist trouvée' });
         }
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la récupération de la playlist' });
     }
 };
@@ -61,14 +60,14 @@ exports.getByName = async (req,res) => {
 
         await Playlist.findOne({name:req.headers.name}).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } }).then((doc) => {
             if (doc) {
-                logger.info("Requete playlist getByName reussi")
+                console.log("Requete playlist getByName reussi")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucune playlist trouvé'})
             }
         })
     }catch (error){
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la récupération de la playlist' });
     }
 }
@@ -90,10 +89,10 @@ exports.updatePlaylist = async (req, res) => {
             return res.status(404).json({ message: 'Playlist non trouvé' });
         }
 
-        logger.info("Playlist updated")
+        console.log("Playlist updated")
         return res.status(200).json(updatedPlaylist);
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de la playlist' });
     }
 };
@@ -120,14 +119,14 @@ exports.updateThumbnail = async (req, res) => {
                       );
 
                       if (updatedPlaylist) {
-                          logger.info("Thumbnail updated")
+                          console.log("Thumbnail updated")
                           return res.status(200).json(updatedPlaylist);
                       } else {
-                          logger.error("une erreur est survenue durant l'update de la playlist")
+                          console.error("une erreur est survenue durant l'update de la playlist")
                       }
                   })
                   .catch((err) => {
-                      logger.error('Erreur lors du téléchargement:', err);
+                      console.error('Erreur lors du téléchargement:', err);
                       res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
                   });
             } else {
@@ -137,7 +136,7 @@ exports.updateThumbnail = async (req, res) => {
             return res.status(500).json({message:"Aucun fichier transmis"})
         }
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
     }
 }
@@ -158,13 +157,13 @@ exports.addOneSong = async (req, res) => {
             if (!updatedPlaylist) {
                 return res.status(404).json({ message: 'Playlist non trouvée.' });
             }
-            logger.info('Son ajouté à la playlist')
+            console.log('Son ajouté à la playlist')
             return res.status(200).json(updatedPlaylist);
         } else {
             return res.status(404).json({ message: 'Média non trouvé' });
         }
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de la playlist' });
     }
 }
@@ -180,14 +179,14 @@ exports.deletePlaylist = async (req, res) => {
                 for (const mediaId of doc.medias) {
                     await Media.findByIdAndUpdate(mediaId, {album: ''})
                 }
-                logger.info('Playlist deleted')
+                console.log('Playlist deleted')
                 return res.status(200).json({message: 'Playlist supprimé avec succès'});
             } else {
                 return res.status(404).json({message: 'Playlist non trouvé'});
             }
         })
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la suppression de la playlist' });
     }
 };
@@ -208,13 +207,13 @@ exports.deleteOneSong = async (req, res) => {
             if (!updatedPlaylist) {
                 return res.status(404).json({ message: 'Playlist non trouvée.' });
             }
-            logger.info('son supprimer de la playlist')
+            console.log('son supprimer de la playlist')
             return res.status(200).json(updatedPlaylist);
         } else {
             return res.status(404).json({ message: 'Média non trouvé' });
         }
     } catch (error) {
-        logger.error(error);
+        console.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de la playlist' });
     }
 }

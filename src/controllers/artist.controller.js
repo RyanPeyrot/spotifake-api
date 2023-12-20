@@ -23,7 +23,7 @@ exports.createOne = async (req,res) => {
           uploadedFileName = cloudfront+data.Key;
         })
         .catch((err) => {
-          logger.error('Erreur lors du téléchargement:', err);
+          console.error('Erreur lors du téléchargement:', err);
           res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
         });
   }
@@ -38,13 +38,13 @@ exports.createOne = async (req,res) => {
 
     const artists = await newArtist.save();
     if (artists) {
-      logger.info("Creation de l'artist reussi")
+      console.log("Creation de l'artist reussi")
       return res.status(200).json(artists)
     } else {
       return res.status(404).json({message: "Erreur lors de la création"})
     }
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la creation de l\'artist' });
   }
 }
@@ -54,14 +54,14 @@ exports.getAll = async (req,res) => {
     Artist.find().populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info("artist get all reussi")
+        console.log("artist get all reussi")
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message: "Aucun artists"})
       }
     })
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la recuperation des artists' });
   }
 }
@@ -71,14 +71,14 @@ exports.getOneById = async (req,res) => {
     Artist.findById(req.params.id).populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info('Requete artist getById reussi')
+        console.log('Requete artist getById reussi')
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message:"Aucun artist trouvé"})
       }
     })
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la recuperation de l\'artist' });
   }
 }
@@ -88,14 +88,14 @@ exports.getOneByName = async (req,res) => {
     Artist.findOne({name: req.headers.name}).populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info('Requete Artist getByName reussi')
+        console.log('Requete Artist getByName reussi')
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message:"Aucun artist trouvé"})
       }
     })
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la recuperation de l\'artist' });
   }
 }
@@ -109,13 +109,13 @@ exports.updateOne = async (req, res) => {
     );
 
     if (updatedArtist) {
-      logger.info('Artists updated')
+      console.log('Artists updated')
       return res.status(200).json(updatedArtist);
     } else {
       return res.status(404).json({ message: "Aucun artist trouvé" });
     }
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
   }
 };
@@ -142,14 +142,14 @@ exports.updateThumbnail = async (req, res) => {
             );
 
             if (updatedArtist) {
-              logger.info('Thumbnail updated')
+              console.log('Thumbnail updated')
               return res.status(200).json(updatedArtist);
             } else {
-              logger.error("une erreur est survenue durant l'update de l'artist")
+              console.error("une erreur est survenue durant l'update de l'artist")
             }
           })
           .catch((err) => {
-            logger.error('Erreur lors du téléchargement:', err);
+            console.error('Erreur lors du téléchargement:', err);
             res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
           });
       } else {
@@ -159,7 +159,7 @@ exports.updateThumbnail = async (req, res) => {
       return res.status(500).json({message:"Aucun fichier transmis"})
     }
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
   }
 }
@@ -171,14 +171,14 @@ exports.deleteOne = async (req,res) => {
         for (const mediaId of doc.titles) {
           await Media.findByIdAndUpdate(mediaId, {$pull: {artist: doc._id}})
         }
-        logger.info('Artist deleted')
+        console.log('Artist deleted')
         return res.status(200).json(doc);
       } else {
         return res.status(404).json({message: "Aucun artist trouvé"});
       }
     });
   } catch (error) {
-    logger.error(error);
+    console.error(error);
     return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
   }
 }
