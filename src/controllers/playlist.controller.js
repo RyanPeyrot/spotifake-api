@@ -30,7 +30,7 @@ exports.createPlaylist = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const Playlists = await Playlist.find().populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
-        logger.info("Requete playlist/getAll réussi")
+        logger.info("Requete playlist getAll reussi")
         return res.status(200).json(Playlists);
     } catch (error) {
         logger.error(error);
@@ -44,7 +44,7 @@ exports.getPlaylistById = async (req, res) => {
         const playlist = await Playlist.findById(playlistId).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } });
 
         if (playlist) {
-            logger.info("Requete playlist/getById réussi")
+            logger.info("Requete playlist getById reussi")
             return res.status(200).json(playlist);
         } else {
             return res.status(404).json({ message: 'Aucune playlist trouvée' });
@@ -61,7 +61,7 @@ exports.getByName = async (req,res) => {
 
         await Playlist.findOne({name:req.headers.name}).populate({ path: 'medias', populate: { path: 'artist', model: 'Artist' } }).then((doc) => {
             if (doc) {
-                logger.info("Requete playlist/getByName réussi")
+                logger.info("Requete playlist getByName reussi")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucune playlist trouvé'})

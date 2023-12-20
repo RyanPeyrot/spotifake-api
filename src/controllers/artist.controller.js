@@ -38,7 +38,7 @@ exports.createOne = async (req,res) => {
 
     const artists = await newArtist.save();
     if (artists) {
-      logger.info("Création de l'artist réussi")
+      logger.info("Creation de l'artist reussi")
       return res.status(200).json(artists)
     } else {
       return res.status(404).json({message: "Erreur lors de la création"})
@@ -71,7 +71,7 @@ exports.getOneById = async (req,res) => {
     Artist.findById(req.params.id).populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info('Requête artist/getById réussi')
+        logger.info('Requete artist getById reussi')
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message:"Aucun artist trouvé"})
@@ -88,7 +88,7 @@ exports.getOneByName = async (req,res) => {
     Artist.findOne({name: req.headers.name}).populate('titles')
       .populate('albums').then((doc) => {
       if (doc) {
-        logger.info('Requête Artist/getByName réussi')
+        logger.info('Requete Artist getByName reussi')
         return res.status(200).json(doc)
       } else {
         return res.status(404).json({message:"Aucun artist trouvé"})

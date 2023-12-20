@@ -194,7 +194,7 @@ exports.getOneById = async (req,res) => {
         Media.findById(req.params.id).populate('artist')
           .populate('album').then((doc) => {
             if (doc) {
-                logger.info("requete media/getById reussi")
+                logger.info("requete media getById reussi")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
@@ -211,7 +211,7 @@ exports.getOneByName = async (req,res) => {
         Media.findOne({title: req.headers.title}).populate('artist')
           .populate('album').then((doc) => {
             if (doc) {
-                logger.info("requête media/getByName")
+                logger.info("requete media getByName")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
@@ -266,7 +266,7 @@ exports.updateSong = async (req, res) => {
                       );
 
                       if (updatedMedia) {
-                          logger.info("Modification du son réussi")
+                          logger.info("Modification du son reussi")
                           return res.status(200).json(updatedMedia);
                       } else {
                           logger.error("une erreur est survenue durant l'update du son")
@@ -341,7 +341,7 @@ exports.deleteMedia = async (req,res) => {
                     await Artist.findByIdAndUpdate(artistId, {$pull: {titles: doc._id}})
                 }
                 await Playlist.findByIdAndUpdate(doc.album,{$pull:{medias:doc._id}})
-                logger.info("Média supprimer")
+                logger.info("Media supprimer")
                 return res.status(200).json({message: "Fichier bien supprimer", doc})
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
