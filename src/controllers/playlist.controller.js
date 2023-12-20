@@ -18,6 +18,7 @@ exports.createPlaylist = async (req, res) => {
         logger.info("Playlist crée")
         res.json(savedPlaylist);
     } catch (error) {
+        logger.debug("body : "+req.body)
         logger.error(error);
         res.status(500).json({ message: 'Erreur lors de la création de la playlist' });
     }
