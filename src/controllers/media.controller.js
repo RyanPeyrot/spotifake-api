@@ -107,8 +107,8 @@ exports.createOne = async(req,res) => {
                 await new Promise((resolve, reject) => {
                     fluentffmpeg()
                       .input(fs.createReadStream(req.file.path))
-                      .audioCodec('aac')  // Utiliser le codec AAC pour le format m4a
-                      .toFormat('m4a')    // Spécifier le format de sortie
+                      .audioCodec('vorbis')  // Utiliser le codec AAC pour le format m4a
+                      .toFormat('ogg')    // Spécifier le format de sortie
                       .on('end', () => {
                         logger.info('Conversion terminée avec succès');
                         resolve();
@@ -117,13 +117,13 @@ exports.createOne = async(req,res) => {
                           logger.error('Erreur lors de la conversion :', err);
                           reject(err);
                       })
-                      .pipe(fs.createWriteStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.m4a`));
+                      .pipe(fs.createWriteStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`));
                 });
 
                 const uploadMediaParams = {
                     Bucket: 'spotifake-ral',
                     Key: `media/media_${req.file.originalname}`,
-                    Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.m4a`),
+                    Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`),
                 };
 
                 const uploadThumbnailParams = {
