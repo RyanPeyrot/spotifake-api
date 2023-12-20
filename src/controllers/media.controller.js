@@ -9,6 +9,7 @@ const path = require("path")
 const fluentffmpeg = require('fluent-ffmpeg');
 const slugify = require('slugify');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
+const logger = require('../logger')
 
 const uploadS3 = (params) => {
     return s3.upload(params).promise();
@@ -34,10 +35,10 @@ exports.createOne = async(req,res) => {
 
                     await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist}).then((doc) => {
                         if(doc){
-                            console.log('Album trouvé :', doc);
+                            logger.info('Album trouvé :', doc);
                             album = doc;
                         } else {
-                            console.log('Aucun album existant trouvé.');
+                            logger.info('Aucun album existant trouvé.');
                         }
                     })
                     if(album === undefined){
@@ -49,7 +50,7 @@ exports.createOne = async(req,res) => {
 
                         await uploadS3(uploadThumbParams).then(async (data) => {
                             const thumbPath = cloudfront+data.Key;
-                            console.log('Téléversement réussi. Lien du fichier:', path);
+                            logger.info('Téléversement réussi. Lien du fichier:', path);
 
                             album = new Playlist({
                                 name: metadata.common.album === undefined ? "undefined" : metadata.common.album,
@@ -62,10 +63,10 @@ exports.createOne = async(req,res) => {
 
                             return await album.save()
                         }).then((savedAlbum) => {
-                            console.log('Création de l\'album réussie:', savedAlbum);
+                            logger.info('Création de l\'album réussie:', savedAlbum);
                             album = savedAlbum;
                         }).catch((error) => {
-                            console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
+                            logger.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
                             return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
                         });
                     }
@@ -77,13 +78,13 @@ exports.createOne = async(req,res) => {
                             .then((doc) => {
                                 if(doc){
                                     mediaArtist = doc;
-                                    console.log("artist trouvé :",doc)
+                                    logger.info("artist trouvé :",doc)
                                 } else {
-                                    console.log("Artist pas trouvé en base")
+                                    logger.info("Artist pas trouvé en base")
                                 }
                             })
                             .catch((error) => {
-                                console.error('Erreur lors de la recherche d\'artiste :', error);
+                                logger.error('Erreur lors de la recherche d\'artiste :', error);
                             });
                         if (mediaArtist === undefined){
                             mediaArtist = new Artist({
@@ -92,6 +93,7 @@ exports.createOne = async(req,res) => {
                                 titles : []
                             })
                             mediaArtist = await mediaArtist.save();
+                            logger.info("Création de l'artist réussi")
                         }
                         allArtists.push(mediaArtist._id)
 
@@ -108,11 +110,11 @@ exports.createOne = async(req,res) => {
                       .audioCodec('aac')  // Utiliser le codec AAC pour le format m4a
                       .toFormat('m4a')    // Spécifier le format de sortie
                       .on('end', () => {
-                        console.log('Conversion terminée avec succès');
+                        logger.info('Conversion terminée avec succès');
                         resolve();
                     })
                       .on('error', (err) => {
-                          console.error('Erreur lors de la conversion :', err);
+                          logger.error('Erreur lors de la conversion :', err);
                           reject(err);
                       })
                       .pipe(fs.createWriteStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.m4a`));
@@ -150,25 +152,25 @@ exports.createOne = async(req,res) => {
 
                     return await newMedia.save();
                 }).then(async (savedMedia) => {
-                    console.log('Création du media réussi:', savedMedia);
+                    logger.info('Création du media réussi:', savedMedia);
                     await Playlist.findByIdAndUpdate(savedMedia._doc.album, {$addToSet:{medias: savedMedia._id}});
                     for (const artist of savedMedia._doc.artist) {
                         await Artist.findByIdAndUpdate(artist,{$addToSet:{titles : savedMedia._id}})
                     }
                     res.status(201).json(savedMedia);
                 }).catch((error) => {
-                    console.error('Une erreur est survenue lors du téléversement de', req.file.originalname, ':', error);
+                    logger.error('Une erreur est survenue lors du téléversement de', req.file.originalname, ':', error);
                     return res.status(500).send(`Erreur lors du téléversement de ${req.file.originalname}.`);
                 });
             } catch (error) {
-                console.error('Erreur lors de la lecture des métadonnées :', error.message);
+                logger.error('Erreur lors de la lecture des métadonnées :', error.message);
                return  res.status(500).send('Erreur lors de la lecture des métadonnées.');
             }
         } else {
             return res.status(400).send("Aucun fichier");
         }
     } catch (error) {
-        console.error('Erreur lors du traitement de la requête :', error);
+        logger.error('Erreur lors du traitement de la requête :', error);
         return res.status(500).send('Erreur lors du traitement de la requête.');
     }
 }
@@ -179,9 +181,10 @@ exports.getAll = async(req,res) => {
     try {
         const medias = await Media.find().populate('artist')
           .populate('album');
+        logger.info("Récuperation des medias réussi")
         return res.status(200).json(medias);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({message: 'Erreur lors de la récupération des média'});
     }
 }
@@ -191,13 +194,14 @@ exports.getOneById = async (req,res) => {
         Media.findById(req.params.id).populate('artist')
           .populate('album').then((doc) => {
             if (doc) {
+                logger.info("requete media/getById reussi")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
         })
     }catch (error){
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({message: 'Erreur lors de la récupération des média'});
     }
 }
@@ -207,13 +211,14 @@ exports.getOneByName = async (req,res) => {
         Media.findOne({title: req.headers.title}).populate('artist')
           .populate('album').then((doc) => {
             if (doc) {
+                logger.info("requête media/getByName")
                 return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
         })
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({message: 'Erreur lors de la récupération des média'});
     }
 }
@@ -223,17 +228,18 @@ exports.updateMedia = async (req,res) => {
     try {
         Media.findByIdAndUpdate(req.params.id, req.body, {new: true},(err,media) => {
             if (err) {
-                console.error(err);
+                logger.error(err);
                 return res.status(500).json({message: 'Erreur lors de l\'update du média'});
             }
             if (media) {
+                logger.info("Media Updated")
                 return res.status(200).json(media)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
         })
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({message: 'Erreur lors de l\'update du média'});
     }
 }
@@ -260,13 +266,14 @@ exports.updateSong = async (req, res) => {
                       );
 
                       if (updatedMedia) {
+                          logger.info("Modification du son réussi")
                           return res.status(200).json(updatedMedia);
                       } else {
-                          console.error("une erreur est survenue durant l'update du son")
+                          logger.error("une erreur est survenue durant l'update du son")
                       }
                   })
                   .catch((err) => {
-                      console.error('Erreur lors du téléchargement:', err);
+                      logger.error('Erreur lors du téléchargement:', err);
                       res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
                   });
             } else {
@@ -276,7 +283,7 @@ exports.updateSong = async (req, res) => {
             return res.status(500).json({message:"Aucun fichier transmis"})
         }
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
     }
 }
@@ -303,13 +310,14 @@ exports.updateThumbnail = async (req, res) => {
                       );
 
                       if (updatedMedia) {
+                          logger.info("Thumbnail updated")
                           return res.status(200).json(updatedMedia);
                       } else {
-                          console.error("une erreur est survenue durant l'update du media")
+                          logger.error("une erreur est survenue durant l'update du media")
                       }
                   })
                   .catch((err) => {
-                      console.error('Erreur lors du téléchargement:', err);
+                      logger.error('Erreur lors du téléchargement:', err);
                       res.status(500).json({ message: 'Erreur lors du téléchargement du fichier' });
                   });
             } else {
@@ -319,7 +327,7 @@ exports.updateThumbnail = async (req, res) => {
             return res.status(500).json({message:"Aucun fichier transmis"})
         }
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'artiste' });
     }
 }
@@ -333,13 +341,14 @@ exports.deleteMedia = async (req,res) => {
                     await Artist.findByIdAndUpdate(artistId, {$pull: {titles: doc._id}})
                 }
                 await Playlist.findByIdAndUpdate(doc.album,{$pull:{medias:doc._id}})
+                logger.info("Média supprimer")
                 return res.status(200).json({message: "Fichier bien supprimer", doc})
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
         })
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return res.status(500).json({message: 'Erreur lors de la suppression du média'});
     }
 }
@@ -382,18 +391,18 @@ function addZackSongs() {
         const dossierDeDepart = __dirname+"/../uploads/allSongs";
         const fichiersTrouves = parcourirDossier(dossierDeDepart);
 
-        console.log("nombre fichiers : ",fichiersTrouves.length)
+        logger.info("nombre fichiers : ",fichiersTrouves.length)
 
         async function traiterFichiers(index) {
 
             if (index >= fichiersTrouves.length) {
-                console.log("fin du traitement des fichiers");
+                logger.info("fin du traitement des fichiers");
                 return;
             }
 
             const fichier = fichiersTrouves[index];
 
-            console.log("Traite fichier : ",index,"  --  ",fichier.path);
+            logger.info("Traite fichier : ",index,"  --  ",fichier.path);
 
             try {
                 const metadata = await mm.parseFile(fichier.path);
@@ -401,7 +410,7 @@ function addZackSongs() {
                 let allArtists = [];
 
                 if(metadata.common.album !== undefined){
-                    console.log("Gestion album")
+                    logger.info("Gestion album")
                     if(metadata.common.albumartist === undefined)metadata.common.albumartist = metadata.common.artist
                     //création/ajout à l'album
                     await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist})
@@ -410,7 +419,7 @@ function addZackSongs() {
                       })
                       .catch((error) => {
                           // Gérez les erreurs ici
-                          console.error('Erreur lors de la recherche d\'album :', error);
+                          logger.error('Erreur lors de la recherche d\'album :', error);
                       });
                     if(album === null){
                         const uploadThumbParams = {
@@ -433,13 +442,13 @@ function addZackSongs() {
                         }).then((savedAlbum) => {
                             album = savedAlbum;
                         }).catch((error) => {
-                            console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
+                            logger.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
                             return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
                         });
                     }
 
                     //création des artist inconnus
-                    console.log("Gestion artists");
+                    logger.info("Gestion artists");
                     for (const artist of metadata.common.artists) {
                         let mediaArtist;
                         await Artist.findOne({ name: artist })
@@ -448,7 +457,7 @@ function addZackSongs() {
                           })
                           .catch((error) => {
                               // Gérez les erreurs ici
-                              console.error('Erreur lors de la recherche d\'artiste :', error);
+                              logger.error('Erreur lors de la recherche d\'artiste :', error);
                           });
                         if (mediaArtist === null){
                             mediaArtist = new Artist({
@@ -472,7 +481,7 @@ function addZackSongs() {
                     Body: fs.createReadStream(fichier.path),
                 };
 
-                console.log("Gestion Media")
+                logger.info("Gestion Media")
                 await uploadS3(uploadMediaParams).then(async (data) => {
                     const newMedia = new Media({
                         title: metadata.common.title === undefined ? "undefined" : metadata.common.title,
@@ -485,17 +494,17 @@ function addZackSongs() {
 
                     return newMedia.save();
                 }).then(async (savedMedia) => {
-                    console.log('Création du media réussi:', savedMedia);
+                    logger.info('Création du media réussi:', savedMedia);
                     await Playlist.findByIdAndUpdate(savedMedia._doc.album, {medias: savedMedia._id});
                     for (const artist of savedMedia._doc.artist) {
                         await Artist.findByIdAndUpdate(artist,{titles : savedMedia._id})
                     }
                 }).catch((error) => {
-                    console.error('Une erreur est survenue lors du téléversement de', fichier.filename, ':', error);
+                    logger.error('Une erreur est survenue lors du téléversement de', fichier.filename, ':', error);
                     return res.status(500).send(`Erreur lors du téléversement de ${fichier.filename}.`);
                 });
             } catch (error) {
-                console.error('Erreur lors de la lecture des métadonnées :', error.message, fichier.path);
+                logger.error('Erreur lors de la lecture des métadonnées :', error.message, fichier.path);
                 return res.status(500).send('Erreur lors de la lecture des métadonnées.');
             }
 
@@ -505,7 +514,7 @@ function addZackSongs() {
 
         traiterFichiers(0)
     } catch (error) {
-        console.error('Erreur lors du traitement de la requête :', error);
+        logger.error('Erreur lors du traitement de la requête :', error);
         return res.status(500).send('Erreur lors du traitement de la requête.');
     }
 

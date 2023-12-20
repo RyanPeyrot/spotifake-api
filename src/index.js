@@ -6,6 +6,9 @@ const apiRouter = require('./routes/index');
 const cors = require('cors');
 const aws = require("aws-sdk")
 require('dotenv').config();
+const logger = require('logger')
+
+app.use(require('morgan')('combined', { stream: logger.stream }));
 
 mongoose.set('strictQuery',false);
 app.use(bodyParser.json());
@@ -13,12 +16,12 @@ app.use(bodyParser.json());
 app.use(cors());
 mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb?retryWrites=true&w=majority
 `).then(()=>{
-    console.log("Connection successfull");
-}).catch(err=>console.log(err));
+    logger.info("Connection successfull");
+}).catch(err=>logger.error(err));
 
 app.use('/spotifake-ral/v1',apiRouter)
 app.listen(process.env.PORT,function (){
-    console.log("server launch");
+    logger.info("server launch");
 });
 
 aws.config.update({
