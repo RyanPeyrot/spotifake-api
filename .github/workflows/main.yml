@@ -25,7 +25,6 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             cd spotifake-api
-            rm package.json
             rm package-lock.json
             pm2 stop npm
             git pull
