@@ -14,7 +14,7 @@ mongoose.set('strictQuery',false);
 app.use(bodyParser.json());
 
 app.use(cors());
-mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb?retryWrites=true&w=majority
+mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb2?retryWrites=true&w=majority
 `).then(()=>{
     console.log("Connection successfull");
 }).catch(err=>console.error(err));
