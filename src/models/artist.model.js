@@ -17,6 +17,10 @@ const artistSchema = mongoose.Schema({
     thumbnail : {
         type:String,
         default : 'https://d2be9zb8yn0dxh.cloudfront.net/'
+    },
+    createdAt : {
+        type:Date,
+        default : Date.now(),
     }
 })
 

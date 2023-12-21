@@ -10,6 +10,7 @@ const fluentffmpeg = require('fluent-ffmpeg');
 const slugify = require('slugify');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 const logger = require('../utils/logger')
+const axios = require('axios');
 
 const uploadS3 = (params) => {
     return s3.upload(params).promise();
@@ -154,7 +155,8 @@ exports.createOne = async(req,res) => {
                         ...(metadata.common.date !== undefined && { releaseDate: metadata.common.date }),
                         storage: mediaPath,
                         ...(thumbnailPath !== undefined && { thumbnail: thumbnailPath }),
-                        genre : metadata.common.genre || []
+                        genre : metadata.common.genre || [],
+                        duration : metadata.format.duration || 0
                     });
 
                     return await newMedia.save();
@@ -237,14 +239,10 @@ exports.getOneByName = async (req,res) => {
 /* UPDATE */
 exports.updateMedia = async (req,res) => {
     try {
-        Media.findByIdAndUpdate(req.params.id, req.body, {new: true},(err,media) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({message: 'Erreur lors de l\'update du média'});
-            }
-            if (media) {
+        Media.findByIdAndUpdate(req.params.id, req.body, {new: true}).then((doc) => {
+            if (doc) {
                 console.log("Media Updated")
-                return res.status(200).json(media)
+                return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
