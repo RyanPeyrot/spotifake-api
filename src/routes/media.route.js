@@ -20,8 +20,9 @@ const upload = multer({ storage: storage });
 
 //router.get(<path>,<controller>.<method>)
 router.post("/",upload.single('file'),controller.createOne);
-router.get("/",controller.getAll);
+//router.get("/zack/",controller.addZackSongs);
 router.get("/title/",controller.getOneByName);
+router.get("/",controller.getAll);
 router.get("/:id",controller.getOneById);
 router.put("/song/:id",upload.single('file'),controller.updateSong);
 router.put("/thumbnail/:id",upload.single('file'),controller.updateThumbnail);

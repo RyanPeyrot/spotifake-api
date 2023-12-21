@@ -41,33 +41,39 @@ exports.createOne = async(req,res) => {
                         }
                     })
                     if (album === undefined) {
-                        const uploadThumbParams = {
-                            Bucket: 'spotifake-ral',
-                            Key: `playlist/thumb_${metadata.common.album}`,
-                            Body: metadata.common.picture[0].data,
+                        let uploadThumbnailParams;
+                        if(metadata.common.picture !== undefined){
+                            uploadThumbnailParams = {
+                                Bucket: 'spotifake-ral',
+                                Key: `media/thumbnail_${path.parse(req.file.originalname).name}.jpg`,
+                                Body: metadata.common.picture[0].data,
+                            };
                         }
-
-                        await uploadS3(uploadThumbParams).then(async (data) => {
-                            const thumbPath = cloudfront + data.Key;
-                            console.log('Téléversement réussi. Lien du fichier:', path);
-
-                            album = new Playlist({
-                                name: metadata.common.album === undefined ? "undefined" : metadata.common.album,
-                                createdAt: metadata.common.date === undefined ? "undefined" : metadata.common.date,
-                                creator: metadata.common.albumartist === undefined ? "undefined" : metadata.common.albumartist,
-                                media: [],
-                                thumbnail: thumbPath,
-                                isAlbum: true
-                            });
-
-                            return await album.save()
-                        }).then((savedAlbum) => {
-                            console.log('Création de l\'album réussie:', savedAlbum);
-                            album = savedAlbum;
-                        }).catch((error) => {
+                        let thumbPath;
+                        if(uploadThumbnailParams !== undefined){
+                            await uploadS3(uploadThumbnailParams).then(async (data) => {
+                                thumbPath = cloudfront+data.Key
+                            }).then(() => {
+                                console.log('Téléversement réussi. Lien du fichier:', path);
+                            })
+                              .catch((error) => {
                             console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
                             return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
                         });
+                        }
+
+                            album = new Playlist({
+                                name: metadata.common.album || "undefined",
+                                ...(metadata.common.date !== undefined && { createdAt: thumbPath }),
+                                creator: metadata.common.albumartist || "undefined",
+                                media: [],
+                                ...(thumbPath !== undefined && { thumbnail: thumbPath }),
+                                isAlbum: true
+                            });
+
+                            let savedAlbum =  await album.save()
+                            console.log('Création de l\'album réussie:', savedAlbum );
+                            album = savedAlbum;
                     }
                 }
 
@@ -89,7 +95,7 @@ exports.createOne = async(req,res) => {
                             });
                         if (mediaArtist === undefined){
                             mediaArtist = new Artist({
-                                name : artist === undefined ? "undefined" : artist,
+                                name : artist || "undefined",
                                 albums : [],
                                 titles : []
                             })
@@ -367,7 +373,7 @@ exports.deleteMedia = async (req,res) => {
 
 
 /*    FONCTION POUR AJOUTER TOUTES LES CHANSON DE ZACK */
-function addZackSongs() {
+exports.addZackSongs = async(req,res) =>  {
     try {
         const s3 = new AWS.S3()
         const uploadS3 = async (params) => {
@@ -416,13 +422,19 @@ function addZackSongs() {
             console.log("Traite fichier : ",index,"  --  ",fichier.path);
 
             try {
+                let metadata;
 
-                let allArtists = []
+                try {
+                    metadata = await mm.parseFile(fichier.path);
+                } catch (error) {
+                    console.error("Erreur lors du parsing du fichier :", error);
+                }
+
                 let album;
+                let allArtists = [];
 
-                if (req.file) {
+                if (metadata) {
                     try {
-                        const metadata = await mm.parseFile(req.file.path);
 
                         if(metadata.common.album !== undefined) {
                             if (metadata.common.albumartist === undefined && metadata.common.artist !== undefined) metadata.common.albumartist = metadata.common.artist
@@ -440,33 +452,39 @@ function addZackSongs() {
                                 }
                             })
                             if (album === undefined) {
-                                const uploadThumbParams = {
-                                    Bucket: 'spotifake-ral',
-                                    Key: `playlist/thumb_${metadata.common.album}`,
-                                    Body: metadata.common.picture[0].data,
+                                let uploadThumbnailParams;
+                                if(metadata.common.picture !== undefined){
+                                    uploadThumbnailParams = {
+                                        Bucket: 'spotifake-ral',
+                                        Key: `media/thumbnail_${path.parse(fichier.filename).name}.jpg`,
+                                        Body: metadata.common.picture[0].data,
+                                    };
+                                }
+                                let thumbPath;
+                                if(uploadThumbnailParams !== undefined){
+                                    await uploadS3(uploadThumbnailParams).then(async (data) => {
+                                        thumbPath = cloudfront+data.Key
+                                    }).then(() => {
+                                        console.log('Téléversement réussi. Lien du fichier:', path);
+                                    })
+                                      .catch((error) => {
+                                          console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
+                                          return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
+                                      });
                                 }
 
-                                await uploadS3(uploadThumbParams).then(async (data) => {
-                                    const thumbPath = cloudfront + data.Key;
-                                    console.log('Téléversement réussi. Lien du fichier:', path);
-
-                                    album = new Playlist({
-                                        name: metadata.common.album === undefined ? "undefined" : metadata.common.album,
-                                        createdAt: metadata.common.date === undefined ? "undefined" : metadata.common.date,
-                                        creator: metadata.common.albumartist === undefined ? "undefined" : metadata.common.albumartist,
-                                        media: [],
-                                        thumbnail: thumbPath,
-                                        isAlbum: true
-                                    });
-
-                                    return await album.save()
-                                }).then((savedAlbum) => {
-                                    console.log('Création de l\'album réussie:', savedAlbum);
-                                    album = savedAlbum;
-                                }).catch((error) => {
-                                    console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
-                                    return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
+                                album = new Playlist({
+                                    name: metadata.common.album || "undefined",
+                                    ...(metadata.common.date !== undefined && { createdAt: metadata.common.date }),
+                                    creator: metadata.common.albumartist || "undefined",
+                                    media: [],
+                                    ...(thumbPath !== undefined && { thumbnail: thumbPath }),
+                                    isAlbum: true
                                 });
+
+                                let savedAlbum =  await album.save()
+                                console.log('Création de l\'album réussie:', savedAlbum );
+                                album = savedAlbum;
                             }
                         }
 
@@ -488,7 +506,7 @@ function addZackSongs() {
                                   });
                                 if (mediaArtist === undefined){
                                     mediaArtist = new Artist({
-                                        name : artist === undefined ? "undefined" : artist,
+                                        name : artist || "undefined",
                                         albums : [],
                                         titles : []
                                     })
@@ -503,10 +521,10 @@ function addZackSongs() {
                             }
                         }
 
-                        const fileName = slugify(path.parse(req.file.originalname).name, { lower: true });
+                        const fileName = slugify(path.parse(fichier.filename).name, { lower: true });
                         await new Promise((resolve, reject) => {
                             fluentffmpeg()
-                              .input(fs.createReadStream(req.file.path))
+                              .input(fs.createReadStream(fichier.path))
                               .audioCodec('vorbis')  // Utiliser le codec AAC pour le format m4a
                               .toFormat('ogg')    // Spécifier le format de sortie
                               .on('end', () => {
@@ -522,7 +540,7 @@ function addZackSongs() {
 
                         const uploadMediaParams = {
                             Bucket: 'spotifake-ral',
-                            Key: `media/media_${req.file.originalname}`,
+                            Key: `media/media_${fichier.filename}`,
                             Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`),
                         };
 
@@ -530,7 +548,7 @@ function addZackSongs() {
                         if(metadata.common.picture !== undefined){
                             uploadThumbnailParams = {
                                 Bucket: 'spotifake-ral',
-                                Key: `media/thumbnail_${path.parse(req.file.originalname).name}.jpg`,
+                                Key: `media/thumbnail_${path.parse(fichier.filename).name}.jpg`,
                                 Body: metadata.common.picture[0].data,
                             };
                         }
@@ -567,28 +585,23 @@ function addZackSongs() {
                                     await Artist.findByIdAndUpdate(artist,{$addToSet:{titles : savedMedia._id}})
                                 }
                             }
-                            res.status(201).json(savedMedia);
                         }).catch((error) => {
-                            console.error('Une erreur est survenue lors du téléversement de', req.file.originalname, ':', error);
-                            return res.status(500).send(`Erreur lors du téléversement de ${req.file.originalname}.`);
+                            console.error('Une erreur est survenue lors du téléversement de', fichier.filename, ':', error);
                         });
                     } catch (error) {
                         console.error('Erreur lors de la lecture des métadonnées :', error.message);
-                        return  res.status(500).send('Erreur lors de la lecture des métadonnées.');
                     }
                 } else {
-                    return res.status(400).send("Aucun fichier");
                 }
             } catch (error) {
                 console.error('Erreur lors du traitement de la requête :', error);
-                return res.status(500).send('Erreur lors du traitement de la requête.');
             }
 
             // Appel récursif pour passer à la prochaine itération
             await traiterFichiers(index + 1);
         }
 
-        traiterFichiers(0)
+        await traiterFichiers(0)
     } catch (error) {
         console.error('Erreur lors du traitement de la requête :', error);
         return res.status(500).send('Erreur lors du traitement de la requête.');
