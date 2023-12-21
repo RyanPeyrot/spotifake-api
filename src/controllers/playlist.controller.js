@@ -77,11 +77,11 @@ exports.getByName = async (req,res) => {
 exports.updatePlaylist = async (req, res) => {
     try {
         const PlaylistId = req.params.id;
-        const {nom,creator } = req.body;
+        const {nom,creator,isAlbum,medias } = req.body;
 
         const updatedPlaylist = await Playlist.findByIdAndUpdate(
             PlaylistId,
-            {nom, creator },
+            {nom, creator,isAlbum,$addToSet: {medias:medias} },
             { new: true }
         );
 
