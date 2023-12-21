@@ -16,7 +16,6 @@ const mediaSchema = mongoose.Schema({
     },
     releaseDate : {
         type: Date,
-        required: true
     },
     genre : [{
         type: String,

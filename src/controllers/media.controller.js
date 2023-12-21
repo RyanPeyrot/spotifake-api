@@ -18,11 +18,6 @@ const uploadS3 = (params) => {
 /* CREATE */
 exports.createOne = async(req,res) => {
     try {
-        const s3 = new AWS.S3()
-        const uploadS3 = (params) => {
-            return s3.upload(params).promise()
-        }
-
         let allArtists = []
         let album;
 
@@ -30,18 +25,22 @@ exports.createOne = async(req,res) => {
             try {
                 const metadata = await mm.parseFile(req.file.path);
 
-                if(metadata.common.album !== undefined){
-                    if(metadata.common.albumartist === undefined)metadata.common.albumartist = metadata.common.artist
+                if(metadata.common.album !== undefined) {
+                    if (metadata.common.albumartist === undefined && metadata.common.artist !== undefined) metadata.common.albumartist = metadata.common.artist
 
-                    await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist}).then((doc) => {
-                        if(doc){
+                    await Playlist.findOne({
+                        isAlbum: true,
+                        name: metadata.common.album,
+                        creator: metadata.common.albumartist
+                    }).then((doc) => {
+                        if (doc) {
                             console.log('Album trouvé :', doc);
                             album = doc;
                         } else {
                             console.log('Aucun album existant trouvé.');
                         }
                     })
-                    if(album === undefined){
+                    if (album === undefined) {
                         const uploadThumbParams = {
                             Bucket: 'spotifake-ral',
                             Key: `playlist/thumb_${metadata.common.album}`,
@@ -49,7 +48,7 @@ exports.createOne = async(req,res) => {
                         }
 
                         await uploadS3(uploadThumbParams).then(async (data) => {
-                            const thumbPath = cloudfront+data.Key;
+                            const thumbPath = cloudfront + data.Key;
                             console.log('Téléversement réussi. Lien du fichier:', path);
 
                             album = new Playlist({
@@ -70,7 +69,9 @@ exports.createOne = async(req,res) => {
                             return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
                         });
                     }
+                }
 
+                if(metadata.common.artists !== undefined){
                     //création des artist inconnus
                     for (const artist of metadata.common.artists) {
                         let mediaArtist;
@@ -97,7 +98,7 @@ exports.createOne = async(req,res) => {
                         }
                         allArtists.push(mediaArtist._id)
 
-                        if(metadata.common.albumartist === artist){
+                        if(metadata.common.album !== undefined && metadata.common.albumartist === artist){
                             await Artist.findByIdAndUpdate(mediaArtist._id,{$addToSet:{albums : album._id}})
                         }
                     }
@@ -126,36 +127,46 @@ exports.createOne = async(req,res) => {
                     Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`),
                 };
 
-                const uploadThumbnailParams = {
-                    Bucket: 'spotifake-ral',
-                    Key: `media/thumbnail_${path.parse(req.file.originalname).name}.jpg`,
-                    Body: metadata.common.picture[0].data,
-                };
+                let uploadThumbnailParams;
+                if(metadata.common.picture !== undefined){
+                    uploadThumbnailParams = {
+                        Bucket: 'spotifake-ral',
+                        Key: `media/thumbnail_${path.parse(req.file.originalname).name}.jpg`,
+                        Body: metadata.common.picture[0].data,
+                    };
+                }
 
                 let mediaPath;
                 let thumbnailPath;
                 await uploadS3(uploadMediaParams).then(async (data) => {
 
-                    await uploadS3(uploadThumbnailParams).then(async (data) => {
-                        thumbnailPath = cloudfront+data.Key
-                    })
+                    if(uploadThumbnailParams !== undefined){
+                        await uploadS3(uploadThumbnailParams).then(async (data) => {
+                            thumbnailPath = cloudfront+data.Key
+                        })
+                    }
 
                     mediaPath = cloudfront + data.Key;
                     const newMedia = new Media({
-                        title: metadata.common.title === undefined ? "undefined" : metadata.common.title,
-                        artist: allArtists === undefined ? "undefined" : allArtists,
-                        album: album._id === undefined ? "undefined" : album._id,
-                        releaseDate: metadata.common.date === undefined ? "undefined" : metadata.common.date,
+                        title: metadata.common.title || "undefined",
+                        ...(allArtists !== undefined && { artist: allArtists }),
+                        ...(album !== undefined && album._id !== undefined && { album: album._id }),
+                        ...(metadata.common.date !== undefined && { releaseDate: metadata.common.date }),
                         storage: mediaPath,
-                        thumbnail:thumbnailPath
+                        ...(thumbnailPath !== undefined && { thumbnail: thumbnailPath }),
+                        genre : metadata.common.genre || []
                     });
 
                     return await newMedia.save();
                 }).then(async (savedMedia) => {
                     console.log('Création du media réussi:', savedMedia);
-                    await Playlist.findByIdAndUpdate(savedMedia._doc.album, {$addToSet:{medias: savedMedia._id}});
-                    for (const artist of savedMedia._doc.artist) {
-                        await Artist.findByIdAndUpdate(artist,{$addToSet:{titles : savedMedia._id}})
+                    if(savedMedia._doc.album !== undefined ){
+                        await Playlist.findByIdAndUpdate(savedMedia._doc.album, {$addToSet:{medias: savedMedia._id}});
+                    }
+                    if(savedMedia._doc.artist !== undefined){
+                        for (const artist of savedMedia._doc.artist) {
+                            await Artist.findByIdAndUpdate(artist,{$addToSet:{titles : savedMedia._id}})
+                        }
                     }
                     res.status(201).json(savedMedia);
                 }).catch((error) => {
@@ -405,107 +416,172 @@ function addZackSongs() {
             console.log("Traite fichier : ",index,"  --  ",fichier.path);
 
             try {
-                const metadata = await mm.parseFile(fichier.path);
-                let album;
-                let allArtists = [];
 
-                if(metadata.common.album !== undefined){
-                    console.log("Gestion album")
-                    if(metadata.common.albumartist === undefined)metadata.common.albumartist = metadata.common.artist
-                    //création/ajout à l'album
-                    await Playlist.findOne({isAlbum : true, name:metadata.common.album, creator:metadata.common.albumartist})
-                      .then((result) => {
-                          album = result;
-                      })
-                      .catch((error) => {
-                          // Gérez les erreurs ici
-                          console.error('Erreur lors de la recherche d\'album :', error);
-                      });
-                    if(album === null){
-                        const uploadThumbParams = {
-                            Bucket: 'spotifake-ral',
-                            Key: `playlist/thumb_${metadata.common.album}`,
-                            Body: metadata.common.picture[0].data,
+                let allArtists = []
+                let album;
+
+                if (req.file) {
+                    try {
+                        const metadata = await mm.parseFile(req.file.path);
+
+                        if(metadata.common.album !== undefined) {
+                            if (metadata.common.albumartist === undefined && metadata.common.artist !== undefined) metadata.common.albumartist = metadata.common.artist
+
+                            await Playlist.findOne({
+                                isAlbum: true,
+                                name: metadata.common.album,
+                                creator: metadata.common.albumartist
+                            }).then((doc) => {
+                                if (doc) {
+                                    console.log('Album trouvé :', doc);
+                                    album = doc;
+                                } else {
+                                    console.log('Aucun album existant trouvé.');
+                                }
+                            })
+                            if (album === undefined) {
+                                const uploadThumbParams = {
+                                    Bucket: 'spotifake-ral',
+                                    Key: `playlist/thumb_${metadata.common.album}`,
+                                    Body: metadata.common.picture[0].data,
+                                }
+
+                                await uploadS3(uploadThumbParams).then(async (data) => {
+                                    const thumbPath = cloudfront + data.Key;
+                                    console.log('Téléversement réussi. Lien du fichier:', path);
+
+                                    album = new Playlist({
+                                        name: metadata.common.album === undefined ? "undefined" : metadata.common.album,
+                                        createdAt: metadata.common.date === undefined ? "undefined" : metadata.common.date,
+                                        creator: metadata.common.albumartist === undefined ? "undefined" : metadata.common.albumartist,
+                                        media: [],
+                                        thumbnail: thumbPath,
+                                        isAlbum: true
+                                    });
+
+                                    return await album.save()
+                                }).then((savedAlbum) => {
+                                    console.log('Création de l\'album réussie:', savedAlbum);
+                                    album = savedAlbum;
+                                }).catch((error) => {
+                                    console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
+                                    return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
+                                });
+                            }
                         }
 
-                        await uploadS3(uploadThumbParams).then(async (data) => {
-                            album = new Playlist({
-                                name: metadata.common.album === undefined ? "undefined" : metadata.common.album,
-                                createdAt: metadata.common.date === undefined ? "undefined" : metadata.common.date,
-                                creator: metadata.common.albumartist === undefined ? "undefined" : metadata.common.albumartist,
-                                media: [],
-                                thumbnail: data.Location === undefined ? "undefined" : data.Location,
-                                isAlbum: true
+                        if(metadata.common.artists !== undefined){
+                            //création des artist inconnus
+                            for (const artist of metadata.common.artists) {
+                                let mediaArtist;
+                                await Artist.findOne({ name: artist })
+                                  .then((doc) => {
+                                      if(doc){
+                                          mediaArtist = doc;
+                                          console.log("artist trouvé :",doc)
+                                      } else {
+                                          console.log("Artist pas trouvé en base")
+                                      }
+                                  })
+                                  .catch((error) => {
+                                      console.error('Erreur lors de la recherche d\'artiste :', error);
+                                  });
+                                if (mediaArtist === undefined){
+                                    mediaArtist = new Artist({
+                                        name : artist === undefined ? "undefined" : artist,
+                                        albums : [],
+                                        titles : []
+                                    })
+                                    mediaArtist = await mediaArtist.save();
+                                    console.log("Création de l'artist réussi")
+                                }
+                                allArtists.push(mediaArtist._id)
+
+                                if(metadata.common.album !== undefined && metadata.common.albumartist === artist){
+                                    await Artist.findByIdAndUpdate(mediaArtist._id,{$addToSet:{albums : album._id}})
+                                }
+                            }
+                        }
+
+                        const fileName = slugify(path.parse(req.file.originalname).name, { lower: true });
+                        await new Promise((resolve, reject) => {
+                            fluentffmpeg()
+                              .input(fs.createReadStream(req.file.path))
+                              .audioCodec('vorbis')  // Utiliser le codec AAC pour le format m4a
+                              .toFormat('ogg')    // Spécifier le format de sortie
+                              .on('end', () => {
+                                  console.log('Conversion terminée avec succès');
+                                  resolve();
+                              })
+                              .on('error', (err) => {
+                                  console.error('Erreur lors de la conversion :', err);
+                                  reject(err);
+                              })
+                              .pipe(fs.createWriteStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`));
+                        });
+
+                        const uploadMediaParams = {
+                            Bucket: 'spotifake-ral',
+                            Key: `media/media_${req.file.originalname}`,
+                            Body: fs.createReadStream(`${path.join(__dirname, '../uploads/media/')}${fileName}.ogg`),
+                        };
+
+                        let uploadThumbnailParams;
+                        if(metadata.common.picture !== undefined){
+                            uploadThumbnailParams = {
+                                Bucket: 'spotifake-ral',
+                                Key: `media/thumbnail_${path.parse(req.file.originalname).name}.jpg`,
+                                Body: metadata.common.picture[0].data,
+                            };
+                        }
+
+                        let mediaPath;
+                        let thumbnailPath;
+                        await uploadS3(uploadMediaParams).then(async (data) => {
+
+                            if(uploadThumbnailParams !== undefined){
+                                await uploadS3(uploadThumbnailParams).then(async (data) => {
+                                    thumbnailPath = cloudfront+data.Key
+                                })
+                            }
+
+                            mediaPath = cloudfront + data.Key;
+                            const newMedia = new Media({
+                                title: metadata.common.title || "undefined",
+                                ...(allArtists !== undefined && { artist: allArtists }),
+                                ...(album !== undefined && album._id !== undefined && { album: album._id }),
+                                ...(metadata.common.date !== undefined && { releaseDate: metadata.common.date }),
+                                storage: mediaPath,
+                                ...(thumbnailPath !== undefined && { thumbnail: thumbnailPath }),
+                                genre : metadata.common.genre || []
                             });
 
-                            return album.save()
-                        }).then((savedAlbum) => {
-                            album = savedAlbum;
+                            return await newMedia.save();
+                        }).then(async (savedMedia) => {
+                            console.log('Création du media réussi:', savedMedia);
+                            if(savedMedia._doc.album !== undefined ){
+                                await Playlist.findByIdAndUpdate(savedMedia._doc.album, {$addToSet:{medias: savedMedia._id}});
+                            }
+                            if(savedMedia._doc.artist !== undefined){
+                                for (const artist of savedMedia._doc.artist) {
+                                    await Artist.findByIdAndUpdate(artist,{$addToSet:{titles : savedMedia._id}})
+                                }
+                            }
+                            res.status(201).json(savedMedia);
                         }).catch((error) => {
-                            console.error('Une erreur est survenue lors du téléversement du thumbnail:', error);
-                            return res.status(500).send(`Erreur lors du téléversement du thumbnail de l'album`);
+                            console.error('Une erreur est survenue lors du téléversement de', req.file.originalname, ':', error);
+                            return res.status(500).send(`Erreur lors du téléversement de ${req.file.originalname}.`);
                         });
+                    } catch (error) {
+                        console.error('Erreur lors de la lecture des métadonnées :', error.message);
+                        return  res.status(500).send('Erreur lors de la lecture des métadonnées.');
                     }
-
-                    //création des artist inconnus
-                    console.log("Gestion artists");
-                    for (const artist of metadata.common.artists) {
-                        let mediaArtist;
-                        await Artist.findOne({ name: artist })
-                          .then((result) => {
-                              mediaArtist = result;
-                          })
-                          .catch((error) => {
-                              // Gérez les erreurs ici
-                              console.error('Erreur lors de la recherche d\'artiste :', error);
-                          });
-                        if (mediaArtist === null){
-                            mediaArtist = new Artist({
-                                name : artist === undefined ? "undefined" : artist,
-                                albums : [],
-                                titles : []
-                            })
-                            mediaArtist = await mediaArtist.save();
-                        }
-                        allArtists.push(mediaArtist._id)
-
-                        if(metadata.common.albumartist === artist){
-                            await Artist.findByIdAndUpdate(mediaArtist._id,{$addToSet:{albums : album._id}})
-                        }
-                    }
+                } else {
+                    return res.status(400).send("Aucun fichier");
                 }
-
-                const uploadMediaParams = {
-                    Bucket: 'spotifake-ral',
-                    Key: `media/media_${fichier.filename}`,
-                    Body: fs.createReadStream(fichier.path),
-                };
-
-                console.log("Gestion Media")
-                await uploadS3(uploadMediaParams).then(async (data) => {
-                    const newMedia = new Media({
-                        title: metadata.common.title === undefined ? "undefined" : metadata.common.title,
-                        artist: allArtists === undefined ? "undefined" : allArtists,
-                        album: album._id === undefined ? "undefined" : album._id,
-                        releaseDate: metadata.common.date === undefined ? "undefined" : metadata.common.date,
-                        genre: metadata.common.genre === undefined ? "undefined" : metadata.common.genre,
-                        storage: data.Location === undefined ? "undefined" : data.Location,
-                    });
-
-                    return newMedia.save();
-                }).then(async (savedMedia) => {
-                    console.log('Création du media réussi:', savedMedia);
-                    await Playlist.findByIdAndUpdate(savedMedia._doc.album, {medias: savedMedia._id});
-                    for (const artist of savedMedia._doc.artist) {
-                        await Artist.findByIdAndUpdate(artist,{titles : savedMedia._id})
-                    }
-                }).catch((error) => {
-                    console.error('Une erreur est survenue lors du téléversement de', fichier.filename, ':', error);
-                    return res.status(500).send(`Erreur lors du téléversement de ${fichier.filename}.`);
-                });
             } catch (error) {
-                console.error('Erreur lors de la lecture des métadonnées :', error.message, fichier.path);
-                return res.status(500).send('Erreur lors de la lecture des métadonnées.');
+                console.error('Erreur lors du traitement de la requête :', error);
+                return res.status(500).send('Erreur lors du traitement de la requête.');
             }
 
             // Appel récursif pour passer à la prochaine itération
