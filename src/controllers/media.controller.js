@@ -243,14 +243,10 @@ exports.getOneByName = async (req,res) => {
 /* UPDATE */
 exports.updateMedia = async (req,res) => {
     try {
-        Media.findByIdAndUpdate(req.params.id, req.body, {new: true},(err,media) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({message: 'Erreur lors de l\'update du média'});
-            }
-            if (media) {
+        Media.findByIdAndUpdate(req.params.id, req.body, {new: true}).then((doc) => {
+            if (doc) {
                 console.log("Media Updated")
-                return res.status(200).json(media)
+                return res.status(200).json(doc)
             } else {
                 return res.status(404).json({message: 'Aucun média trouvé'})
             }
