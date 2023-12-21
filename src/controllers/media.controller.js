@@ -10,6 +10,7 @@ const fluentffmpeg = require('fluent-ffmpeg');
 const slugify = require('slugify');
 const cloudfront = 'https://d2be9zb8yn0dxh.cloudfront.net/';
 const logger = require('../utils/logger')
+const axios = require('axios');
 
 const uploadS3 = (params) => {
     return s3.upload(params).promise();
@@ -160,7 +161,8 @@ exports.createOne = async(req,res) => {
                         ...(metadata.common.date !== undefined && { releaseDate: metadata.common.date }),
                         storage: mediaPath,
                         ...(thumbnailPath !== undefined && { thumbnail: thumbnailPath }),
-                        genre : metadata.common.genre || []
+                        genre : metadata.common.genre || [],
+                        duration : metadata.format.duration || 0
                     });
 
                     return await newMedia.save();

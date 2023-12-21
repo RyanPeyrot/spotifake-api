@@ -33,6 +33,16 @@ const mediaSchema = mongoose.Schema({
         type : String,
         default : 'https://d2be9zb8yn0dxh.cloudfront.net/'
     },
+    duration : {
+        type : Number,
+        required : true,
+    },
+    createdAt : {
+        type:Date,
+        default : Date.now(),
+        immutable: true,
+
+    }
 })
 
 module.exports = mongoose.model('Media', mediaSchema);

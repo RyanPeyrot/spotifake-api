@@ -7,7 +7,10 @@ const playlistSchema = mongoose.Schema({
         required:true,
     },
     createdAt : {
-        type: Date,
+        type:Date,
+        default : Date.now(),
+        immutable: true,
+
     },
     creator : {
         type: String,
