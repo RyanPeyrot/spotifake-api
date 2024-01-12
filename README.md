@@ -52,6 +52,14 @@ Back : http://13.37.240.115:4000/spotifake-ral/v1/
   "thumbnail": "https://d2be9zb8yn0dxh.cloudfront.net/"
 }
 ```
+
+**Session**
+```json
+{
+  "users": ["user1","user2"]
+}
+```
+
 ## Les Routes
 ```
 /spotifake-ral/v1
@@ -62,6 +70,7 @@ Back : http://13.37.240.115:4000/spotifake-ral/v1/
 /playlists
 /medias
 /artists
+/sessions
 ```
 
 **Medias**
@@ -97,6 +106,17 @@ get("/:id");
 put("/thumbnail/:id"); -> body : un fichier image
 put("/:id");
 delete("/:id");
+```
+
+**Sessions**
+```
+post("/") Création de la session via un body json : {user : "nom du user"}
+put("/:id",controller.joinSession) Ajout d'un user a la liste avec body json similaire a la création
+get("/:id",controller.getSession) recupere une session
+get("/",controller.getAllSessions) recupere toute les session
+delete("/user/:id",controller.leaveSession) supprimer le user et delete la session si aucun user dedans,
+    headers json : {user : "nom du user"}
+delete("/:id",controller.deleteSession) supprime la session correspondante
 ```
 
 
