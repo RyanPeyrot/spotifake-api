@@ -114,3 +114,22 @@ exports.deleteSession = async(req,res) => {
     return res.status(500).json({message: "erreur lors de la sortie de la sessions"})
   }
 };
+
+exports. updateCurrentMedia = async (req, res) => {
+  try {
+    const sessionId = req.params. id;
+    const mediaId = req. body. mediaId;
+    const updatedSession = await Session.findByIdAndUpdate(
+    sessionId,
+      { currentMedia: mediaId },
+      { new: true }
+  );
+    if (!updatedSession) {
+      return res.status (404). json ({ message: 'Session non trouvée.'});
+    }
+      return res.status (200) . json (updatedSession);
+    } catch (error) {
+      console.error (error);
+      return res.status (500). json ({ message: 'Erreur lors de la mise à jour'});
+    }
+};

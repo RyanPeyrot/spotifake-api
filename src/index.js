@@ -5,6 +5,11 @@ const app = express();
 const apiRouter = require('./routes/index');
 const cors = require('cors');
 const aws = require("aws-sdk");
+const http = require('http');
+const socketIo = require('socket.io');
+const server = http.createServer(app);
+const io = socketIo(server);
+
 //const logger = require('./utils/logger')
 require('dotenv').config();
 
@@ -14,6 +19,39 @@ mongoose.set('strictQuery',false);
 app.use(bodyParser.json());
 
 app.use(cors());
+
+io.on('connection', (socket) => {
+    console.log('Un utilisateur est connecté');
+
+    socket.on('updateMedia', async (sessionId, mediaId) => {
+        try {
+            // Mettre à jour la session avec le nouveau média
+            const updatedSession = await Session.findByIdAndUpdate(
+                sessionId,
+                { currentMedia: mediaId},
+                { new: true }
+            );
+
+
+            if (!updatedSession) {
+                // Gérer le cas où la session n'est pas trouvée
+                socket.emit('updateError', 'Session non trouvée.');
+                return;
+            }
+
+            // Notifier tous les clients connectés à cette session
+            io.to(sessionId) .emit ('mediaUpdated', updatedSession);
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du média :', error);
+            socket.emit('updateError', 'Erreur lors de la mise à jour du média')
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Un utilisateur est déconnecté');
+    });
+});
+
 mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb2?retryWrites=true&w=majority
 `).then(()=>{
     console.log("Connection successfull");

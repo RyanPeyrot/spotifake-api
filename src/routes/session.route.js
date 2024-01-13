@@ -8,5 +8,6 @@ router.get("/:id",controller.getSession)
 router.get("/",controller.getAllSessions)
 router.delete("/user/:id",controller.leaveSession)
 router.delete("/:id",controller.deleteSession)
+router.put("/:id/media", controller.updateCurrentMedia)
 
 module.exports = router;
