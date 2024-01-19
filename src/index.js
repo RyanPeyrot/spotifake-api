@@ -52,7 +52,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = 4001;
 server.listen(PORT, () => console.log(`Serveur à l'écoute sur le port ${PORT}`));
 
 
