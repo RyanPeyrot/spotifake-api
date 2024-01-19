@@ -7,8 +7,6 @@ const cors = require('cors');
 const aws = require("aws-sdk");
 const http = require('http');
 const socketIo = require('socket.io');
-const server = http.createServer(app);
-const io = socketIo(server);
 
 //const logger = require('./utils/logger')
 require('dotenv').config();
@@ -19,6 +17,12 @@ mongoose.set('strictQuery',false);
 app.use(bodyParser.json());
 
 app.use(cors());
+const httpServer = http.createServer()
+const io = new socketIo.Server(httpServer, {
+    cors: {
+        origin: "*"
+    }
+});
 
 io.on('connection', (socket) => {
     console.log('Un utilisateur est connecté');
@@ -53,7 +57,7 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 4001;
-server.listen(PORT, () => console.log(`Serveur à l'écoute sur le port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Serveur à l'écoute sur le port ${PORT}`));
 
 
 mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb2?retryWrites=true&w=majority
