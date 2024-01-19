@@ -17,7 +17,7 @@ mongoose.set('strictQuery',false);
 app.use(bodyParser.json());
 
 app.use(cors());
-const httpServer = http.createServer()
+const httpServer = http.createServer(app)
 const io = new socketIo.Server(httpServer, {
     cors: {
         origin: "*"
@@ -56,17 +56,13 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 4001;
-httpServer.listen(PORT, () => console.log(`Serveur à l'écoute sur le port ${PORT}`));
-
-
 mongoose.connect(`mongodb+srv://${process.env.DBUSER}:${process.env.DBPASS}@${process.env.DBCLUSTER}.vfjzeo9.mongodb.net/spotifakedb2?retryWrites=true&w=majority
 `).then(()=>{
     console.log("Connection successfull");
 }).catch(err=>console.error(err));
 
 app.use('/spotifake-ral/v1',apiRouter)
-app.listen(process.env.PORT,function (){
+httpServer.listen(process.env.PORT,function (){
     console.log("server launch");
 });
 
