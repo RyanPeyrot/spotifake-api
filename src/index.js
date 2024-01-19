@@ -27,6 +27,10 @@ const io = new socketIo.Server(httpServer, {
 io.on('connection', (socket) => {
     console.log('Un utilisateur est connecté');
 
+    socket.on("joinSession", (sessionId) => {
+        socket.join(sessionId);
+        console.log("un utilisateur à rejoins la session: ",sessionId)
+    })
     socket.on('updateMedia', async (sessionId, mediaId) => {
         try {
             // Mettre à jour la session avec le nouveau média
