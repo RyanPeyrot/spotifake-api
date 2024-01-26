@@ -50,6 +50,7 @@ exports.createOne = async (req,res) => {
 }
 
 exports.getAll = async (req,res) => {
+  console.log("Entrée dans le controller")
   try{
     Artist.find().populate('titles')
       .populate('albums').then((doc) => {
